@@ -1,9 +1,13 @@
 const express = require('express');
-const urlRoute = require('./routes/url');
-const staticRouter = require('./routes/staticRouter');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const URL = require('./models/url');
+
+const urlRoute = require('./routes/url');
+const staticRouter = require('./routes/staticRouter');
+const userRoute = require('./routes/user');
 const { connectMongoDb } = require('./connection');
+const {restrictToLoggedInUser,checkAuth} = require('./middleware/auth');
 const app = express();
 const PORT = 9001; 
 
@@ -13,9 +17,11 @@ app.set("views",path.resolve("./views"));
 
 app.use(express.json());
 app.use(express.urlencoded({extended:false}));
+app.use(cookieParser());
 
-app.use("/url",urlRoute);
-app.use("/",staticRouter);
+app.use("/url",restrictToLoggedInUser,urlRoute);
+app.use("/user",userRoute);
+app.use("/",checkAuth,staticRouter);
 
 
 app.get('/url/:shortid',async(req,res)=>{
@@ -37,4 +43,4 @@ app.get('/url/:shortid',async(req,res)=>{
 
 connectMongoDb('mongodb://localhost:27017/short-url')
 .then(()=>console.log('Connected to MongoDB'));
-app.listen(PORT, ()=>console.log(`Server started at PORT number ${PORT}`));
+app.listen(PORT, ()=>console.log(`Server started  at PORT number ${PORT}`));
